@@ -1,0 +1,11 @@
+[package]
+name = "arma-webhooks"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "arma_webhooks"
+crate-type = ["cdylib"]
+
+[dependencies]
+arma-rs = "1.10.5"

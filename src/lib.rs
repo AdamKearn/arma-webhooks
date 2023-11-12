@@ -12,6 +12,6 @@ static RUNTIME: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
 
 #[arma]
 fn init() -> Extension {
-    let ext = Extension::build().group("discord", discord::group());
+    let ext = Extension::build().command("discord", discord::send);
     ext.finish()
 }

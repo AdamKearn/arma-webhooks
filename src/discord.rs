@@ -1,18 +1,45 @@
 use crate::RUNTIME;
-use arma_rs::Group;
 use discord_webhook::client::WebhookClient;
 
-pub fn group() -> Group {
-    Group::new().command("send", send)
+use serde::Deserialize;
+use std::collections::HashMap;
+use std::fs;
+
+#[derive(Debug, Deserialize)]
+struct DiscordConfig {
+    endpoint: String,
+    #[serde(default)]
+    image: Option<String>,
+    username: String,
 }
 
-fn send(message_body: String) -> String {
-    RUNTIME.block_on(async move {
-        let client: WebhookClient = WebhookClient::new("https://discord.com/api/webhooks/1168673937731891250/y5Wv3_pHoLHebrBP8lLVbonAX4z3nn_XyVbIKbxsEw3SUYyMjrZHXbM8ByN6_BF1xX6H");
-        client
-            .send(|message| message.embed(|embed| embed.title("Webhook").description(&message_body)))
-            .await.unwrap();
-    });
+#[derive(Debug, Deserialize)]
+struct Config {
+    discord: HashMap<String, DiscordConfig>,
+}
 
-    format!("success")
+pub fn send(hook_name: String, message_body: String) -> String {
+    let config_content = fs::read_to_string("/home/reload/arma-server/@ArmaWebhooks/config.yaml")
+        .expect("Unable to read config.yaml file");
+    let config: Config = serde_yaml::from_str(&config_content).expect("Invalid YAML");
+
+    if let Some(hook_details) = config.discord.get(&hook_name) {
+        RUNTIME.block_on(async move {
+            let client: WebhookClient = WebhookClient::new(&hook_details.endpoint);
+            client
+                .send(|message| {
+                    message.embed(|embed| {
+                        embed
+                            .title(&hook_details.username)
+                            .description(&message_body)
+                    })
+                })
+                .await
+                .unwrap();
+        });
+
+        format!("success")
+    } else {
+        format!("failed")
+    }
 }

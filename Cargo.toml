@@ -12,3 +12,5 @@ arma-rs = "1.10.5"
 tokio = { version = "1.34.0", features = ["full"] }
 discord-webhook = "0.1.0"
 once_cell = "1.18.0"
+serde_yaml = "0.9.27"
+serde = { version = "1.0.192", features = ["derive"] }

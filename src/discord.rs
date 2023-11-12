@@ -8,9 +8,8 @@ use std::fs;
 #[derive(Debug, Deserialize)]
 struct DiscordConfig {
     endpoint: String,
-    #[serde(default)]
-    image: Option<String>,
-    username: String,
+    username: Option<String>,
+    avatar_url: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -28,10 +27,18 @@ pub fn send(hook_name: String, message_body: String) -> String {
             let client: WebhookClient = WebhookClient::new(&hook_details.endpoint);
             client
                 .send(|message| {
+                    if let Some(username) = &hook_details.username {
+                        message.username(&username);
+                    }
+                    if let Some(avatar_url) = &hook_details.avatar_url {
+                        message.avatar_url(&avatar_url);
+                    }
+
                     message.embed(|embed| {
-                        embed
-                            .title(&hook_details.username)
-                            .description(&message_body)
+                        if let Some(username) = &hook_details.username {
+                            embed.title(&username);
+                        }
+                        embed.description(&message_body)
                     })
                 })
                 .await

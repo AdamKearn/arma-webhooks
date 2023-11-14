@@ -10,6 +10,7 @@ struct DiscordConfig {
     endpoint: String,
     username: Option<String>,
     avatar_url: Option<String>,
+    content: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -33,13 +34,13 @@ pub fn send(hook_name: String, message_body: String) -> String {
                     if let Some(avatar_url) = &hook_details.avatar_url {
                         message.avatar_url(&avatar_url);
                     }
+                    if let Some(content) = &hook_details.content {
+                        message.content(&content.replace("***", &message_body));
+                    } else {
+                        message.content(&message_body);
+                    }
 
-                    message.embed(|embed| {
-                        if let Some(username) = &hook_details.username {
-                            embed.title(&username);
-                        }
-                        embed.description(&message_body)
-                    })
+                    message
                 })
                 .await
                 .unwrap();

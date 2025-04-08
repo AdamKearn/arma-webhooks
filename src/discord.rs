@@ -1,34 +1,39 @@
 use crate::{get_config, RUNTIME};
-use discord_webhook::client::WebhookClient;
+use reqwest::Client;
 
 pub fn send(hook_name: String, message_body: String) -> String {
     let config = get_config();
 
     if let Some(hook_details) = config.discord.get(&hook_name) {
         RUNTIME.block_on(async move {
-            let client: WebhookClient = WebhookClient::new(&hook_details.endpoint);
-            client
-                .send(|message| {
-                    if let Some(username) = &hook_details.username {
-                        message.username(&username);
-                    }
-                    if let Some(avatar_url) = &hook_details.avatar_url {
-                        message.avatar_url(&avatar_url);
-                    }
-                    if let Some(content) = &hook_details.content {
-                        message.content(&content.replace("***", &message_body));
-                    } else {
-                        message.content(&message_body);
-                    }
+            let client = Client::new();
+            let mut payload = serde_json::json!({
+                "content": message_body
+            });
 
-                    message
-                })
-                .await
-                .unwrap();
-        });
+            if let Some(username) = &hook_details.username {
+                payload["username"] = serde_json::Value::String(username.clone());
+            }
+            if let Some(avatar_url) = &hook_details.avatar_url {
+                payload["avatar_url"] = serde_json::Value::String(avatar_url.clone());
+            }
+            if let Some(content) = &hook_details.content {
+                payload["content"] = serde_json::Value::String(content.replace("***", &message_body));
+            }
 
-        format!("success")
+            let response = client
+                .post(&hook_details.endpoint)
+                .json(&payload)
+                .send()
+                .await;
+
+            if response.is_ok() {
+                format!("success")
+            } else {
+                format!("failed: {}", response.unwrap_err())
+            }
+        })
     } else {
-        format!("failed")
+        format!("unable to find hook with name: {}", hook_name)
     }
 }

@@ -4,6 +4,7 @@ use serde::Deserialize;
 use std::{fs, path::Path};
 
 mod discord;
+mod rest;
 
 static RUNTIME: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
     tokio::runtime::Builder::new_multi_thread()
@@ -11,6 +12,11 @@ static RUNTIME: Lazy<tokio::runtime::Runtime> = Lazy::new(|| {
         .build()
         .expect("Unable to start the runtime.")
 });
+
+#[derive(Debug, Deserialize)]
+struct RestConfig {
+    endpoint: String,
+}
 
 #[derive(Debug, Deserialize)]
 struct DiscordConfig {
@@ -23,6 +29,7 @@ struct DiscordConfig {
 #[derive(Debug, Deserialize)]
 struct Config {
     discord: std::collections::HashMap<String, DiscordConfig>,
+    rest: std::collections::HashMap<String, RestConfig>,
 }
 
 fn get_config() -> Config {
@@ -36,6 +43,9 @@ fn get_config() -> Config {
 
 #[arma]
 fn init() -> Extension {
-    let ext = Extension::build().command("discord", discord::send).group("discord", Group::new().command("send", discord::send)); 
+    let ext = Extension::build()
+        .command("discord", discord::send).group("discord", Group::new().command("send", discord::send))
+        .group("rest", Group::new().command("get", rest::get));
+    
     ext.finish()
 }

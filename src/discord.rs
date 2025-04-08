@@ -1,27 +1,8 @@
-use crate::RUNTIME;
+use crate::{get_config, RUNTIME};
 use discord_webhook::client::WebhookClient;
 
-use serde::Deserialize;
-use std::collections::HashMap;
-use std::fs;
-
-#[derive(Debug, Deserialize)]
-struct DiscordConfig {
-    endpoint: String,
-    username: Option<String>,
-    avatar_url: Option<String>,
-    content: Option<String>,
-}
-
-#[derive(Debug, Deserialize)]
-struct Config {
-    discord: HashMap<String, DiscordConfig>,
-}
-
 pub fn send(hook_name: String, message_body: String) -> String {
-    let config_content = fs::read_to_string("/home/reload/arma-server/@ArmaWebhooks/config.yaml")
-        .expect("Unable to read config.yaml file");
-    let config: Config = serde_yaml::from_str(&config_content).expect("Invalid YAML");
+    let config = get_config();
 
     if let Some(hook_details) = config.discord.get(&hook_name) {
         RUNTIME.block_on(async move {
